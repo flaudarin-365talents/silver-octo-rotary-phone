@@ -24,7 +24,8 @@ $command = 'kubectl top pods';
 @cpu_usage_history = ();
 $origin            = time();
 
-for ( my $n = 0 ; ( $n < 5 ) ; ++$n ) {
+# for ( my $n = 0 ; ( $n < 5 ) ; ++$n ) {
+while (1) {
     my @output = `$command`;
 
     # Removes header
