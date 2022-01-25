@@ -10,15 +10,18 @@ deployment_name = 'fix-k8s-hpa-analyzer-worker'
 replica_number = 10
 
 
-@click.command()
-@click.option("--no-fig/--fig", "no_figure", default=False, help="Do no plot time series")
-@click.option("--list/--no-list", "list_pod_names", default=False, help="Do no plot time series")
-@click.option('--pod-indices', "pod_indices", type=click.STRING, help="List of indices, e.g.: 2,3,6")
-# @click.argument("redis_export_port", type=click.INT)
-# @click.argument("redis_import_port", type=click.INT)
-# @click.option("--client", "-c", "clients", type=click.STRING, multiple=True, help="Migrate feedbacks for a specific client")
-# @click.option("--redis_import_password", type=click.STRING, required=False, help="Password for connecting to the importing Redis server")
-def main(no_figure: bool, list_pod_names: bool, pod_indices: str):
+@click.group()
+def cli():
+    """
+    Examples:
+
+        python procupods.py list_pods\n
+        python procupods.py plot --pod-indices '0,3,4'
+    """
+    pass
+
+
+def load_data() -> pd.DataFrame:
     # Loads data from CSV file
     data: pd.DataFrame = pd.read_csv(data_file_path, sep=';')
 
@@ -28,15 +31,30 @@ def main(no_figure: bool, list_pod_names: bool, pod_indices: str):
     # Converts column name to category
     data['name'] = data['name'].astype('category')
 
+    return data
+
+
+def sec_to_min(seconds: int):
+    minutes = seconds // 60
+    rem_seconds = seconds % 60
+
+    return f"{minutes}' {rem_seconds}\""
+
+
+@click.command(name='plot')
+@click.option('--pod-indices', "pod_indices", type=click.STRING, help="List of indices, e.g.: 2,3,6")
+def plot(pod_indices: str):
+    """
+    Plot CPU load time history
+
+    :param pod_indices: string with comma-separated indices
+    """
+    data = load_data()
+
     time_series = {}
 
     # List of pod names
     pod_names = data['name'].cat.categories
-
-    if list_pod_names:
-        print(f"File '{data_file_path}' contains data on pods:")
-        for name in time_series.keys():
-            print(f"  * {name}")
 
     if pod_indices:
         indices = {int(item) for item in pod_indices.split(',')}
@@ -60,19 +78,53 @@ def main(no_figure: bool, list_pod_names: bool, pod_indices: str):
         # Converts time to minutes
         time_series[name].index = df['time'] / 60
 
-    if not no_figure:
-        plt.figure()
-        for name in pod_names:
-            time_series[name].plot(label=name)
+    plt.figure()
+    for name in pod_names:
+        time_series[name].plot(label=name)
 
-        plt.legend(loc='lower right')
+    plt.legend(loc='lower right')
 
-        plt.grid(True)
-        plt.show()
-        plt.close()
-        # data.plot()
-        # plt.legend(loc='best')
+    plt.grid(True)
+    plt.show()
+    plt.close()
+    # data.plot()
+    # plt.legend(loc='best')
 
+
+@click.command(name='list_pods')
+def list_pods():
+    data = load_data()
+
+    # List of pod names
+    pod_names = data['name'].cat.categories
+    print(f"File '{data_file_path}' contains data on pods:")
+    for name in pod_names:
+        print(f"  * {name}")
+
+
+@click.command(name='start_times')
+def start_times():
+    data = load_data()
+
+    # Sorts data by ascending time
+    data.sort_index(axis=0, ascending=True, inplace=True, kind='quicksort', na_position='last')
+
+    # List of pod names
+    pod_names = sorted(data['name'].cat.categories)
+
+    print("Times when pods were created:")
+
+    for name in pod_names:
+        # noinspection PyTypeChecker
+        pod_mask: pd.Series = data['name'] == name
+        start_time_value = pod_mask[pod_mask].index[0]
+
+        print(f"  * {name}: {sec_to_min(start_time_value)}")
+
+
+cli.add_command(plot)
+cli.add_command(list_pods)
+cli.add_command(start_times)
 
 if __name__ == '__main__':
-    main()
+    cli()
