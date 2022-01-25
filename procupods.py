@@ -5,7 +5,7 @@ import click
 import matplotlib.pyplot as plt
 import pandas as pd
 
-data_file_path = Path('/home/flaudarin/Development/fix-k8s-hpa-analyzer-worker.cpu.load.log')
+# data_file_path = Path('/home/flaudarin/Development/fix-k8s-hpa-analyzer-worker.cpu.load.log')
 deployment_name = 'fix-k8s-hpa-analyzer-worker'
 replica_number = 10
 
@@ -21,7 +21,7 @@ def cli():
     pass
 
 
-def load_data() -> pd.DataFrame:
+def load_data(data_file_path) -> pd.DataFrame:
     # Loads data from CSV file
     data: pd.DataFrame = pd.read_csv(data_file_path, sep=';')
 
@@ -35,21 +35,38 @@ def load_data() -> pd.DataFrame:
 
 
 def sec_to_min(seconds: int):
-    minutes = seconds // 60
-    rem_seconds = seconds % 60
+    r"""
+    >>> sec_to_min(88)
+    '1\' 28"'
+    >>> sec_to_min(-88)
+    '-1\' 28"'
 
-    return f"{minutes}' {rem_seconds}\""
+    :param seconds:
+    :return:
+    """
+    if seconds >= 0:
+        minutes = seconds // 60
+        rem_seconds = seconds % 60
+        minus = False
+    else:
+        minutes = -seconds // 60
+        rem_seconds = -seconds % 60
+        minus = True
+
+    return f"{'-' if minus else ''}{minutes}' {rem_seconds}\""
 
 
 @click.command(name='plot')
+@click.argument("data_file_path", type=click.STRING)
 @click.option('--pod-indices', "pod_indices", type=click.STRING, help="List of indices, e.g.: 2,3,6")
-def plot(pod_indices: str):
+def plot(data_file_path: str, pod_indices: str):
     """
     Plot CPU load time history
 
+    :param data_file_path: path to the data file
     :param pod_indices: string with comma-separated indices
     """
-    data = load_data()
+    data = load_data(data_file_path)
 
     time_series = {}
 
@@ -82,6 +99,8 @@ def plot(pod_indices: str):
     for name in pod_names:
         time_series[name].plot(label=name)
 
+    plt.ylabel("Load (milli CPU)")
+
     plt.legend(loc='lower right')
 
     plt.grid(True)
@@ -92,8 +111,9 @@ def plot(pod_indices: str):
 
 
 @click.command(name='list_pods')
-def list_pods():
-    data = load_data()
+@click.argument("data_file_path", type=click.STRING)
+def list_pods(data_file_path: str):
+    data = load_data(data_file_path)
 
     # List of pod names
     pod_names = data['name'].cat.categories
@@ -103,8 +123,10 @@ def list_pods():
 
 
 @click.command(name='start_times')
-def start_times():
-    data = load_data()
+@click.argument("data_file_path", type=click.STRING)
+@click.option('--offset', "offset", type=click.INT, default=0, help="Apply an offset to start times")
+def start_times(data_file_path: str, offset: int):
+    data = load_data(data_file_path)
 
     # Sorts data by ascending time
     data.sort_index(axis=0, ascending=True, inplace=True, kind='quicksort', na_position='last')
@@ -117,7 +139,7 @@ def start_times():
     for name in pod_names:
         # noinspection PyTypeChecker
         pod_mask: pd.Series = data['name'] == name
-        start_time_value = pod_mask[pod_mask].index[0]
+        start_time_value = pod_mask[pod_mask].index[0] + offset
 
         print(f"  * {name}: {sec_to_min(start_time_value)}")
 
