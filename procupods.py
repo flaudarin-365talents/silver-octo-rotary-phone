@@ -1,11 +1,9 @@
 import re
-from pathlib import Path
 
 import click
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# data_file_path = Path('/home/flaudarin/Development/fix-k8s-hpa-analyzer-worker.cpu.load.log')
 deployment_name = 'fix-k8s-hpa-analyzer-worker'
 replica_number = 10
 
