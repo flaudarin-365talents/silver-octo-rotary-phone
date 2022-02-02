@@ -4,9 +4,6 @@ import click
 import matplotlib.pyplot as plt
 import pandas as pd
 
-deployment_name = 'fix-k8s-hpa-analyzer-worker'
-replica_number = 10
-
 
 @click.group()
 def cli():
@@ -56,13 +53,13 @@ def sec_to_min(seconds: int):
 
 @click.command(name='plot')
 @click.argument("data_file_path", type=click.STRING)
-@click.option('--pod-indices', "pod_indices", type=click.STRING, help="List of indices, e.g.: 2,3,6")
-def plot(data_file_path: str, pod_indices: str):
+@click.option('--pod-suffixes', "pod_suffixes", type=click.STRING, help="List of suffixes, e.g.: 2,3,674f8d8999-7dxxk")
+def plot(data_file_path: str, pod_suffixes: str):
     """
     Plot CPU load time history
 
     :param data_file_path: path to the data file
-    :param pod_indices: string with comma-separated indices
+    :param pod_suffixes: string with comma-separated indices
     """
     data = load_data(data_file_path)
 
@@ -71,18 +68,16 @@ def plot(data_file_path: str, pod_indices: str):
     # List of pod names
     pod_names = data['name'].cat.categories
 
-    if pod_indices:
-        indices = {int(item) for item in pod_indices.split(',')}
+    if pod_suffixes:
+        suffixes = pod_suffixes.split(',')
 
-        def index_in_selection(value: str):
-            match = re.search(r'(\d+)$', value)
-            if match:
-                index = int(match.group(1))
-                if index in indices:
+        def is_in_selection(name: str):
+            for suffix in suffixes:
+                if name.endswith(suffix):
                     return True
             return False
 
-        pod_names = [name for name in pod_names if index_in_selection(name)]
+        pod_names = [name for name in pod_names if is_in_selection(name)]
 
     for name in pod_names:
         filter_mask = data['name'] == name
@@ -99,13 +94,11 @@ def plot(data_file_path: str, pod_indices: str):
 
     plt.ylabel("Load (milli CPU)")
 
-    plt.legend(loc='lower right')
+    plt.legend(loc='upper right')
 
     plt.grid(True)
     plt.show()
     plt.close()
-    # data.plot()
-    # plt.legend(loc='best')
 
 
 @click.command(name='list_pods')
