@@ -1,5 +1,3 @@
-import re
-
 import click
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -11,7 +9,7 @@ def cli():
     Examples:
 
         python procupods.py list_pods\n
-        python procupods.py plot --pod-indices '0,3,4'
+        python procupods.py plot -pod-suffixes' '4bjlv,jxkf4'
     """
     pass
 
