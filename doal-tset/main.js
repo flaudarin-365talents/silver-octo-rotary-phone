@@ -1,20 +1,31 @@
 #!/usr/bin/env node
 import process, { exit } from "process";
 import * as http from "http";
+import _yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 
-const cliArgs = process.argv;
+const yargs = _yargs(hideBin(process.argv));
 
-if (cliArgs.length != 4) {
-  console.error(
-    "Bad number of arguments:\n",
-    "SYNTAX:\n  main.js <client> <number of requests>"
-  );
-  exit(1);
-}
+yargs
+  .option("client", {
+    describe: "client's name",
+    type: "string",
+    demandOption: true,
+  })
+  .option("num-requests", {
+    describe: "number of requests to send",
+    type: "number",
+    demandOption: true,
+  })
+  .option("delay", {
+    describe: "delay between two requests in ms",
+    type: "number",
+    demandOption: true,
+  });
 
-const client = cliArgs[2];
-const numberOfRequest = cliArgs[3];
-const reqDelay = 2500; // ms
+const client = yargs.argv.client;
+const numberOfRequest = yargs.argv.numRequests;
+const reqDelay = yargs.argv.delay; // ms
 
 console.log("Number of API calls requested:", numberOfRequest);
 console.log(`Delay between API calls: ${reqDelay} ms`);
@@ -50,7 +61,7 @@ async function repeatedGreetingsLoop() {
       let respBodyChunksSizes = [];
       res
         .on("data", (chunk) => {
-          // console.log(`reveived: ${chunk.length} chars`);
+          // console.log(`received: ${chunk.length} chars`);
           respBodyChunks.push(chunk);
           respBodyChunksSizes.push(chunk.length);
         })
