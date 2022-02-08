@@ -20,12 +20,25 @@ yargs
   .option("delay", {
     describe: "delay between two requests in ms",
     type: "number",
+    default: 0,
+    demandOption: false,
+  })
+  .option("host", {
+    describe: "delay between two requests in ms",
+    type: "string",
+    default: "localhost",
+    demandOption: false,
+  })
+  .option("port", {
+    describe: "delay between two requests in ms",
+    type: "number",
+    default: 9090,
     demandOption: false,
   });
 
 const client = yargs.argv.client;
 const numberOfRequest = yargs.argv.numRequests;
-const reqDelay = yargs.argv.delay === undefined ? 0 : yargs.argv.delay; // ms
+const reqDelay = yargs.argv.delay; // ms
 
 console.log("Number of API calls requested:", numberOfRequest);
 console.log(`Delay between API calls: ${reqDelay} ms`);
@@ -40,8 +53,8 @@ async function repeatedGreetingsLoop() {
 
     // HTTP request's setup
     const options = {
-      hostname: "localhost",
-      port: 9090,
+      hostname: yargs.argv.host,
+      port: yargs.argv.port,
       path: `/${client}/get_ref`,
       method: "GET",
       headers: {
