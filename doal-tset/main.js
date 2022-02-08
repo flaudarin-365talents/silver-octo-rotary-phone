@@ -20,24 +20,24 @@ yargs
   .option("delay", {
     describe: "delay between two requests in ms",
     type: "number",
-    demandOption: true,
+    demandOption: false,
   });
 
 const client = yargs.argv.client;
 const numberOfRequest = yargs.argv.numRequests;
-const reqDelay = yargs.argv.delay; // ms
+const reqDelay = yargs.argv.delay === undefined ? 0 : yargs.argv.delay; // ms
 
 console.log("Number of API calls requested:", numberOfRequest);
 console.log(`Delay between API calls: ${reqDelay} ms`);
-
-// Starts a timer
-const startTime = performance.now();
 
 const sleepNow = (delay) =>
   new Promise((resolve) => setTimeout(resolve, delay));
 
 async function repeatedGreetingsLoop() {
   for (let count = 1; count <= numberOfRequest; count++) {
+    // Starts a timer
+    const startTime = performance.now();
+
     // HTTP request's setup
     const options = {
       hostname: "localhost",
@@ -86,7 +86,9 @@ async function repeatedGreetingsLoop() {
     // Send data
     req.end();
     console.log(`Sent request #${count}`);
-    await sleepNow(reqDelay);
+    if (reqDelay > 0) {
+      await sleepNow(reqDelay);
+    }
   }
 }
 

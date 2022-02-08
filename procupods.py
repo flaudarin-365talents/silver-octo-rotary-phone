@@ -92,7 +92,7 @@ def plot(data_file_path: str, pod_suffixes: str):
 
     plt.ylabel("Load (milli CPU)")
 
-    plt.legend(loc='upper right')
+    plt.legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left", mode="expand", ncol=2)
 
     plt.grid(True)
     plt.show()
