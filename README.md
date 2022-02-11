@@ -1,5 +1,7 @@
 # Scripts for analyzing the activity in a K8s cluster
 
+![The silver octo rotary phone](https://drive.google.com/uc?export=view&id=1ZNc0teUqKH0lHIP4J_JBeI712Q3nGVM0)
+
 ## Move it you lazy pod!
 This script records CPU load time series from command `kubectl top pod`.
 
